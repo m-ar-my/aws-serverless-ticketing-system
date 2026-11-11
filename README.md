@@ -13,9 +13,9 @@ A serverless IT ticketing backend built on AWS featuring full CRUD operations, A
 * **API Gateway:** Created a REST API with full CRUD routes mapped to each Lambda function, deployed to a `prod` stage:
   * `POST /tickets`
   * `GET /tickets`
-  * `GET /tickets/{id}`
-  * `PUT /tickets/{id}`
-  * `DELETE /tickets/{id}`
+  * `GET /tickets/{ticketId}`
+  * `PUT /tickets/{ticketId}`
+  * `DELETE /tickets/{ticketId}`
 
 ### Phase 3 — Security & Validation ✅
 * **API Key Authentication:** All endpoints secured with an API key via API Gateway usage plan.
