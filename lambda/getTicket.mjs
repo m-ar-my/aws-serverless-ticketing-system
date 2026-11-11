@@ -27,7 +27,7 @@ exports.handler = async (event) => {
         };
     }
 
-    // GET /tickets — fetch all tickets
+    // GET /tickets — fetch all tickets.
     const result = await docClient.send(new ScanCommand({
         TableName: 'ticketing-table'
     }));
