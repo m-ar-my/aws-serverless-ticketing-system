@@ -1,40 +1,32 @@
-const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
-const { DynamoDBDocumentClient, DeleteCommand, GetCommand } = require("@aws-sdk/lib-dynamodb");
+const { DynamoDBClient, QueryCommand, DeleteItemCommand } = require("@aws-sdk/client-dynamodb");
+const { marshall } = require("@aws-sdk/util-dynamodb");
 
 const client = new DynamoDBClient({});
-const docClient = DynamoDBDocumentClient.from(client);
 
 exports.handler = async (event) => {
-    const ticketId = event.pathParameters?.ticketId;
+  const ticketId = event.pathParameters?.ticketId;
 
-    if (!ticketId) {
-        return {
-            statusCode: 400,
-            body: JSON.stringify({ error: 'Missing required path parameter: ticketId' })
-        };
-    }
+  if (!ticketId) {
+    return { statusCode: 400, body: JSON.stringify({ error: "Missing ticketId" }) };
+  }
 
-    // Check ticket exists
-    const existing = await docClient.send(new GetCommand({
-        TableName: 'ticketing-table',
-        Key: { ticketId }
-    }));
+  // Find the createdAt automatically
+  const query = await client.send(new QueryCommand({
+    TableName: "ticketing-table",
+    KeyConditionExpression: "ticketId = :id",
+    ExpressionAttributeValues: marshall({ ":id": ticketId })
+  }));
 
-    if (!existing.Item) {
-        return {
-            statusCode: 404,
-            body: JSON.stringify({ error: 'Ticket not found' })
-        };
-    }
+  if (!query.Items.length) {
+    return { statusCode: 404, body: JSON.stringify({ error: "Ticket not found" }) };
+  }
 
-    // Delete the ticket
-    await docClient.send(new DeleteCommand({
-        TableName: 'ticketing-table',
-        Key: { ticketId }
-    }));
+  const createdAt = query.Items[0].createdAt.S;
 
-    return {
-        statusCode: 200,
-        body: JSON.stringify({ message: 'Ticket deleted successfully', ticketId })
-    };
+  await client.send(new DeleteItemCommand({
+    TableName: "ticketing-table",
+    Key: marshall({ ticketId, createdAt })
+  }));
+
+  return { statusCode: 200, body: JSON.stringify({ message: "Ticket deleted" }) };
 };
