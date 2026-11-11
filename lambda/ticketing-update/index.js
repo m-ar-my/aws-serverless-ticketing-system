@@ -1,118 +1,47 @@
-const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
-const { DynamoDBDocumentClient, UpdateCommand, GetCommand } = require("@aws-sdk/lib-dynamodb");
+const { DynamoDBClient, QueryCommand, UpdateItemCommand } = require("@aws-sdk/client-dynamodb");
+const { marshall } = require("@aws-sdk/util-dynamodb");
 
 const client = new DynamoDBClient({});
-const docClient = DynamoDBDocumentClient.from(client);
 
 exports.handler = async (event) => {
-    const ticketId = event.pathParameters?.ticketId;
+  const ticketId = event.pathParameters?.ticketId;
+  const body = JSON.parse(event.body || "{}");
 
-    if (!ticketId) {
-        return {
-            statusCode: 400,
-            body: JSON.stringify({ error: 'Missing required path parameter: ticketId' })
-        };
-    }
+  if (!ticketId) {
+    return { statusCode: 400, body: JSON.stringify({ error: "Missing ticketId" }) };
+  }
 
-    let body;
-    try {
-        body = JSON.parse(event.body || '{}');
-    } catch (e) {
-        return {
-            statusCode: 400,
-            body: JSON.stringify({ error: 'Invalid JSON in request body' })
-        };
-    }
+  // Find the createdAt automatically
+  const query = await client.send(new QueryCommand({
+    TableName: "ticketing-table",
+    KeyConditionExpression: "ticketId = :id",
+    ExpressionAttributeValues: marshall({ ":id": ticketId })
+  }));
 
-    // Validate at least one field is provided
-    const allowedFields = ['title', 'description', 'priority', 'status'];
-    const updates = {};
+  if (!query.Items.length) {
+    return { statusCode: 404, body: JSON.stringify({ error: "Ticket not found" }) };
+  }
 
-    for (const field of allowedFields) {
-        if (body[field] !== undefined) {
-            updates[field] = body[field];
-        }
-    }
+  const createdAt = query.Items[0].createdAt.S;
 
-    if (Object.keys(updates).length === 0) {
-        return {
-            statusCode: 400,
-            body: JSON.stringify({ error: 'At least one field required: title, description, priority, or status' })
-        };
-    }
+  const allowed = ["title", "description", "priority", "status"];
+  const updates = Object.keys(body).filter(k => allowed.includes(k));
 
-    // Validate individual fields if provided
-    if (updates.title !== undefined) {
-        updates.title = updates.title.trim();
-        if (!updates.title) {
-            return {
-                statusCode: 400,
-                body: JSON.stringify({ error: 'title cannot be empty' })
-            };
-        }
-        if (updates.title.length > 200) {
-            return {
-                statusCode: 400,
-                body: JSON.stringify({ error: 'title must be 200 characters or less' })
-            };
-        }
-    }
+  if (updates.length === 0) {
+    return { statusCode: 400, body: JSON.stringify({ error: "No valid fields to update" }) };
+  }
 
-    if (updates.priority !== undefined) {
-        updates.priority = updates.priority.trim().toLowerCase();
-        if (!['low', 'medium', 'high'].includes(updates.priority)) {
-            return {
-                statusCode: 400,
-                body: JSON.stringify({ error: 'priority must be low, medium, or high' })
-            };
-        }
-    }
+  const expression = "SET " + updates.map((k, i) => `#f${i} = :v${i}`).join(", ");
+  const names = Object.fromEntries(updates.map((k, i) => [`#f${i}`, k]));
+  const values = marshall(Object.fromEntries(updates.map((k, i) => [`:v${i}`, body[k]])));
 
-    if (updates.status !== undefined) {
-        updates.status = updates.status.trim().toLowerCase();
-        if (!['open', 'in-progress', 'closed'].includes(updates.status)) {
-            return {
-                statusCode: 400,
-                body: JSON.stringify({ error: 'status must be open, in-progress, or closed' })
-            };
-        }
-    }
+  await client.send(new UpdateItemCommand({
+    TableName: "ticketing-table",
+    Key: marshall({ ticketId, createdAt }),
+    UpdateExpression: expression,
+    ExpressionAttributeNames: names,
+    ExpressionAttributeValues: values
+  }));
 
-    // Check ticket exists
-    const existing = await docClient.send(new GetCommand({
-        TableName: 'ticketing-table',
-        Key: { ticketId }
-    }));
-
-    if (!existing.Item) {
-        return {
-            statusCode: 404,
-            body: JSON.stringify({ error: 'Ticket not found' })
-        };
-    }
-
-    // Build update expression
-    const updateExpressions = [];
-    const expressionAttributeNames = {};
-    const expressionAttributeValues = {};
-
-    for (const [key, value] of Object.entries(updates)) {
-        updateExpressions.push(`#${key} = :${key}`);
-        expressionAttributeNames[`#${key}`] = key;
-        expressionAttributeValues[`:${key}`] = value;
-    }
-
-    const result = await docClient.send(new UpdateCommand({
-        TableName: 'ticketing-table',
-        Key: { ticketId },
-        UpdateExpression: `SET ${updateExpressions.join(', ')}`,
-        ExpressionAttributeNames: expressionAttributeNames,
-        ExpressionAttributeValues: expressionAttributeValues,
-        ReturnValues: 'ALL_NEW'
-    }));
-
-    return {
-        statusCode: 200,
-        body: JSON.stringify(result.Attributes)
-    };
+  return { statusCode: 200, body: JSON.stringify({ message: "Ticket updated" }) };
 };
