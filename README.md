@@ -7,6 +7,11 @@ A serverless IT ticketing backend built on AWS featuring full CRUD operations, A
 ### Phase 1 — Foundation ✅
 * **IAM Role:** Created a Lambda execution role with DynamoDB read/write permissions.
 * **DynamoDB Table:** Created `tickets` table with `ticketId` as the partition key.
+* Table name: ticketing-table
+*Partition key: ticketId (S)
+*Sort key: createdAt (S)
+*API endpoint: https://xkfvs4luk2.execute-api.ap-southeast-2.amazonaws.com/prod
+*Routes: POST /tickets, GET /tickets, GET /tickets/{ticketId}, PUT /tickets/{ticketId}, DELETE /tickets/{ticketId}
 
 ### Phase 2 — Compute & API ✅
 * **Lambda Functions:** Created 5 functions (`create`, `get`, `list`, `update`, `delete`) using Node.js, each handling a specific CRUD operation against DynamoDB.
