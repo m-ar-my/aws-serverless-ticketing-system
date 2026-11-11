@@ -1,39 +1,25 @@
-const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
-const { DynamoDBDocumentClient, GetCommand, ScanCommand } = require("@aws-sdk/lib-dynamodb");
+const { DynamoDBClient, QueryCommand, ScanCommand } = require("@aws-sdk/client-dynamodb");
+const { marshall, unmarshall } = require("@aws-sdk/util-dynamodb");
 
 const client = new DynamoDBClient({});
-const docClient = DynamoDBDocumentClient.from(client);
 
 exports.handler = async (event) => {
-    const ticketId = event.pathParameters?.ticketId;
+  const ticketId = event.pathParameters?.ticketId;
 
-    // GET /tickets/{ticketId} — fetch single ticket
-    if (ticketId) {
-        const result = await docClient.send(new GetCommand({
-            TableName: 'ticketing-table',
-            Key: { ticketId }
-        }));
+  if (!ticketId) {
+    const result = await client.send(new ScanCommand({ TableName: "ticketing-table" }));
+    return { statusCode: 200, body: JSON.stringify(result.Items.map(unmarshall)) };
+  }
 
-        if (!result.Item) {
-            return {
-                statusCode: 404,
-                body: JSON.stringify({ error: 'Ticket not found' })
-            };
-        }
+  const result = await client.send(new QueryCommand({
+    TableName: "ticketing-table",
+    KeyConditionExpression: "ticketId = :id",
+    ExpressionAttributeValues: marshall({ ":id": ticketId })
+  }));
 
-        return {
-            statusCode: 200,
-            body: JSON.stringify(result.Item)
-        };
-    }
+  if (!result.Items.length) {
+    return { statusCode: 404, body: JSON.stringify({ error: "Ticket not found" }) };
+  }
 
-    // GET /tickets — fetch all tickets.
-    const result = await docClient.send(new ScanCommand({
-        TableName: 'ticketing-table'
-    }));
-
-    return {
-        statusCode: 200,
-        body: JSON.stringify(result.Items || [])
-    };
+  return { statusCode: 200, body: JSON.stringify(unmarshall(result.Items[0])) };
 };
