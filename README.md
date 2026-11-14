@@ -14,7 +14,7 @@ A serverless IT ticketing backend built on AWS featuring full CRUD operations, A
   * Routes: POST /tickets, GET /tickets, GET /tickets/{ticketId}, PUT /tickets/{ticketId}, DELETE /tickets/{ticketId}
 
 ### Phase 2 - Compute & API ✅
-* **Lambda Functions:** Created 4 functions (`ticketing-create`, `ticketing-get`, `ticketing-update`, `ticketing-delete`) using Node.js, each handling a specific CRUD operation against DynamoDB.
+* **Lambda Functions:** Created 4 functions (`ticketing-create`, `ticketing-get`, `ticketing-update`, `ticketing-delete`) using Node.js 24.x, each handling a specific CRUD operation against DynamoDB.
 * **API Gateway:** Created a REST API with full CRUD routes mapped to each Lambda function, deployed to a `prod` stage:
   * `POST /tickets`
   * `GET /tickets`
@@ -65,43 +65,56 @@ curl -X DELETE "https://xkfvs4luk2.execute-api.ap-southeast-2.amazonaws.com/prod
   -H "x-api-key: <API_KEY>"
 # → 200, subsequent GET returns 404
 
-### Phase 4 - Monitoring ✅
-* **CloudWatch Dashboard:** Created `ticketing-dashboard` with 4 widgets:
-  * Lambda Errors - all 4 functions
-  * Lambda Throttles - all 4 functions
-  * Lambda Duration - all 4 functions
-  * API Gateway - 4XXError, 5XXError, Count for `ticketing-api`
-* **CloudWatch Alarms:** Created 10 alarms (no actions yet - wired up in Phase 6):
-  * `ticketing-create-errors` - Lambda Errors > 0 per 5 min
-  * `ticketing-get-errors` - Lambda Errors > 0 per 5 min
-  * `ticketing-update-errors` - Lambda Errors > 0 per 5 min
-  * `ticketing-delete-errors` - Lambda Errors > 0 per 5 min
-  * `ticketing-create-throttles` - Lambda Throttles > 0 per 5 min
-  * `ticketing-get-throttles` - Lambda Throttles > 0 per 5 min
-  * `ticketing-update-throttles` - Lambda Throttles > 0 per 5 min
-  * `ticketing-delete-throttles` - Lambda Throttles > 0 per 5 min
-  * `ticketing-api-4xx-errors` - API Gateway 4XXError > 10 per 5 min
-  * `ticketing-api-5xx-errors` - API Gateway 5XXError > 10 per 5 min
+Phase 4 - Monitoring ✅
+CloudWatch Dashboard: Created ticketing-dashboard with 4 widgets:
+Lambda Errors - all 4 functions
+Lambda Throttles - all 4 functions
+Lambda Duration - all 4 functions
+API Gateway - 4XXError, 5XXError, Count for ticketing-api
+CloudWatch Alarms: Created 10 alarms (no actions yet - wired up in Phase 6):
+ticketing-create-errors - Lambda Errors > 0 per 5 min
+ticketing-get-errors - Lambda Errors > 0 per 5 min
+ticketing-update-errors - Lambda Errors > 0 per 5 min
+ticketing-delete-errors - Lambda Errors > 0 per 5 min
+ticketing-create-throttles - Lambda Throttles > 0 per 5 min
+ticketing-get-throttles - Lambda Throttles > 0 per 5 min
+ticketing-update-throttles - Lambda Throttles > 0 per 5 min
+ticketing-delete-throttles - Lambda Throttles > 0 per 5 min
+ticketing-api-4xx-errors - API Gateway 4XXError > 10 per 5 min
+ticketing-api-5xx-errors - API Gateway 5XXError > 10 per 5 min
 
-### Phase 5 - Frontend on S3 + CloudFront ✅
-* **S3 Bucket:** Static website hosting enabled, `index.html` uploaded with full ticketing UI.
-* **CloudFront Distribution:** `E14F4HU4QKQRU9`
-  * URL: https://d2akoriob20egl.cloudfront.net
-* **CORS Configuration:**
-  * OPTIONS mock integration on `/tickets` and `/tickets/{ticketId}`
-  * Default 4XX and 5XX Gateway Responses include `Access-Control-Allow-Origin: *` headers
-* **Frontend Features:**
-  * Create ticket form (title, priority, description)
-  * Ticket list table with ID, title, description, priority, status, created date
-  * Delete button per ticket
-  * Refresh button
-  * Success/error message banners
+Phase 5 - Frontend on S3 + CloudFront ✅
+S3 Bucket: ticketing-frontend-m-ar-my — static website hosting enabled, index.html uploaded with full ticketing UI.
+CloudFront Distribution: E14F4HU4QKQRU9
+URL: https://d2akoriob20egl.cloudfront.net 
+CORS Configuration:
+OPTIONS mock integration on /tickets and /tickets/{ticketId}
+Default 4XX and 5XX Gateway Responses include Access-Control-Allow-Origin: * headers
+All 4 Lambda functions return Access-Control-Allow-Origin: * in every response
+Bugs fixed during this phase:
+✅ Frontend response parsing — index.html correctly parses data.body from API Gateway proxy response
+✅ API key mismatch — API_KEY in index.html corrected to match ticketing-api-key in API Gateway
+✅ CORS headers — all 4 Lambda functions updated to include CORS headers in every return statement
+Frontend Features:
+Create ticket form (title, priority, description)
+Ticket list table with ID, title, description, priority, status, created date
+Delete button per ticket
+Refresh button
+Success/error message banners
 
-## 📋 Roadmap
-* [x] Phase 1: Foundation
-* [x] Phase 2: Compute & API
-* [x] Phase 3: Security & Validation
-* [x] Phase 4: CloudWatch Alarms & Dashboard
-* [x] Phase 5: Frontend on S3 + CloudFront
-* [ ] Phase 6: SNS/SES Notifications
-* [ ] Phase 7: CI/CD with CodePipeline
+📋 Roadmap
+ Phase 1: Foundation
+ Phase 2: Compute & API
+ Phase 3: Security & Validation
+ Phase 4: CloudWatch Alarms & Dashboard
+ Phase 5: Frontend on S3 + CloudFront
+ Phase 6: SNS/SES Notifications
+ Phase 7: CI/CD with CodePipeline
+
+🔑 Key Resources
+Resource	Value
+API Endpoint	https://xkfvs4luk2.execute-api.ap-southeast-2.amazonaws.com/prod
+CloudFront URL	https://d2akoriob20egl.cloudfront.net
+DynamoDB Table	ticketing-table
+Usage Plan	ticketing-usage-plan (ID: 3qmqgd)
+Region	ap-southeast-2
