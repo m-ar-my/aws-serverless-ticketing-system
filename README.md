@@ -25,15 +25,45 @@ A serverless IT ticketing backend built on AWS featuring full CRUD operations, A
 ### Phase 3 - Security & Validation ✅
 * **API Key Authentication:** All endpoints secured with an API key via API Gateway usage plan (`ticketing-usage-plan`).
 * **Input Validation:** Lambda functions validate required fields (`title`) and allowed values (`priority`: `low`, `medium`, `high`), returning `400` errors for invalid requests.
-* **GET/UPDATE/DELETE simplified:** `createdAt` looked up automatically — `ticketId` only needed.
+* **GET/UPDATE/DELETE simplified:** `createdAt` looked up automatically - `ticketId` only needed.
 
 ### 🧪 Tested & Verified
+
+**Validation errors:**
 * Missing required fields → `400` validation error
 * Invalid field values → `400` validation error
-* Valid ticket creation → `201` with UUID, timestamp, and default `status: open`
-* GET all tickets → returns full list
-* PUT update → updates allowed fields only
-* DELETE → removes ticket, returns `404` on subsequent GET
+
+**CRUD operations (tested via curl):**
+
+```bash
+# Create ticket
+curl -X POST https://xkfvs4luk2.execute-api.ap-southeast-2.amazonaws.com/prod/tickets \
+  -H "x-api-key: <API_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Test ticket","description":"Testing","priority":"high"}'
+# → 201 with UUID, timestamp, status: open
+
+# Get all tickets
+curl -X GET "https://xkfvs4luk2.execute-api.ap-southeast-2.amazonaws.com/prod/tickets" \
+  -H "x-api-key: <API_KEY>"
+# → 200 with full ticket list
+
+# Get single ticket
+curl -X GET "https://xkfvs4luk2.execute-api.ap-southeast-2.amazonaws.com/prod/tickets/{ticketId}" \
+  -H "x-api-key: <API_KEY>"
+# → 200 with ticket details
+
+# Update ticket
+curl -X PUT "https://xkfvs4luk2.execute-api.ap-southeast-2.amazonaws.com/prod/tickets/{ticketId}" \
+  -H "x-api-key: <API_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{"status":"closed","priority":"low"}'
+# → 200, allowed fields updated
+
+# Delete ticket
+curl -X DELETE "https://xkfvs4luk2.execute-api.ap-southeast-2.amazonaws.com/prod/tickets/{ticketId}" \
+  -H "x-api-key: <API_KEY>"
+# → 200, subsequent GET returns 404
 
 ### Phase 4 - Monitoring ✅
 * **CloudWatch Dashboard:** Created `ticketing-dashboard` with 4 widgets:
