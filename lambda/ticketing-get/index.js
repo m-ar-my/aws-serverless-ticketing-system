@@ -3,12 +3,18 @@ const { marshall, unmarshall } = require("@aws-sdk/util-dynamodb");
 
 const client = new DynamoDBClient({});
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type,X-Api-Key',
+  'Content-Type': 'application/json'
+};
+
 exports.handler = async (event) => {
   const ticketId = event.pathParameters?.ticketId;
 
   if (!ticketId) {
     const result = await client.send(new ScanCommand({ TableName: "ticketing-table" }));
-    return { statusCode: 200, body: JSON.stringify(result.Items.map(unmarshall)) };
+    return { statusCode: 200, headers: corsHeaders, body: JSON.stringify(result.Items.map(unmarshall)) };
   }
 
   const result = await client.send(new QueryCommand({
@@ -18,8 +24,8 @@ exports.handler = async (event) => {
   }));
 
   if (!result.Items.length) {
-    return { statusCode: 404, body: JSON.stringify({ error: "Ticket not found" }) };
+    return { statusCode: 404, headers: corsHeaders, body: JSON.stringify({ error: "Ticket not found" }) };
   }
 
-  return { statusCode: 200, body: JSON.stringify(unmarshall(result.Items[0])) };
+  return { statusCode: 200, headers: corsHeaders, body: JSON.stringify(unmarshall(result.Items[0])) };
 };
