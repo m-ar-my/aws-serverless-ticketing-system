@@ -1,7 +1,11 @@
 const { DynamoDBClient, QueryCommand, UpdateItemCommand } = require("@aws-sdk/client-dynamodb");
 const { marshall } = require("@aws-sdk/util-dynamodb");
+const { SNSClient, PublishCommand } = require("@aws-sdk/client-sns");
 
 const client = new DynamoDBClient({});
+const snsClient = new SNSClient({ region: "ap-southeast-2" });
+
+const SNS_TOPIC_ARN = process.env.SNS_TOPIC_ARN;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -47,6 +51,15 @@ exports.handler = async (event) => {
     ExpressionAttributeNames: names,
     ExpressionAttributeValues: values
   }));
+
+  // SNS notification — only fires if status is being changed
+  if (body.status) {
+    await snsClient.send(new PublishCommand({
+      TopicArn: SNS_TOPIC_ARN,
+      Subject: `[Ticketing] Ticket Status Changed: ${ticketId}`,
+      Message: `A ticket status has been updated.\n\nID: ${ticketId}\nNew Status: ${body.status}\nUpdated: ${new Date().toISOString()}`
+    }));
+  }
 
   return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ message: "Ticket updated" }) };
 };
