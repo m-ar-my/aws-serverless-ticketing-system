@@ -3,14 +3,19 @@ const { marshall } = require("@aws-sdk/util-dynamodb");
 
 const client = new DynamoDBClient({});
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type,X-Api-Key',
+  'Content-Type': 'application/json'
+};
+
 exports.handler = async (event) => {
   const ticketId = event.pathParameters?.ticketId;
 
   if (!ticketId) {
-    return { statusCode: 400, body: JSON.stringify({ error: "Missing ticketId" }) };
+    return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ error: "Missing ticketId" }) };
   }
 
-  // Find the createdAt automatically
   const query = await client.send(new QueryCommand({
     TableName: "ticketing-table",
     KeyConditionExpression: "ticketId = :id",
@@ -18,7 +23,7 @@ exports.handler = async (event) => {
   }));
 
   if (!query.Items.length) {
-    return { statusCode: 404, body: JSON.stringify({ error: "Ticket not found" }) };
+    return { statusCode: 404, headers: corsHeaders, body: JSON.stringify({ error: "Ticket not found" }) };
   }
 
   const createdAt = query.Items[0].createdAt.S;
@@ -28,5 +33,5 @@ exports.handler = async (event) => {
     Key: marshall({ ticketId, createdAt })
   }));
 
-  return { statusCode: 200, body: JSON.stringify({ message: "Ticket deleted" }) };
+  return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ message: "Ticket deleted" }) };
 };
