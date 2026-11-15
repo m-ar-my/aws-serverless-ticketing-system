@@ -1,64 +1,35 @@
-const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
-const { DynamoDBDocumentClient, PutCommand } = require("@aws-sdk/lib-dynamodb");
+const { DynamoDBClient, PutItemCommand } = require("@aws-sdk/client-dynamodb");
+const { marshall } = require("@aws-sdk/util-dynamodb");
 const { randomUUID } = require("crypto");
 
 const client = new DynamoDBClient({});
-const docClient = DynamoDBDocumentClient.from(client);
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type,X-Api-Key',
+  'Content-Type': 'application/json'
+};
 
 exports.handler = async (event) => {
-    let body;
-    try {
-        body = JSON.parse(event.body || '{}');
-    } catch (e) {
-        return {
-            statusCode: 400,
-            body: JSON.stringify({ error: 'Invalid JSON in request body' })
-        };
-    }
+  const body = JSON.parse(event.body || "{}");
 
-    // Validate required fields
-    const title = (body.title || '').trim();
-    if (!title) {
-        return {
-            statusCode: 400,
-            body: JSON.stringify({ error: 'Missing required field: title' })
-        };
-    }
+  if (!body.title) {
+    return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ error: "Missing title" }) };
+  }
 
-    if (title.length > 200) {
-        return {
-            statusCode: 400,
-            body: JSON.stringify({ error: 'title must be 200 characters or less' })
-        };
-    }
+  const item = {
+    ticketId: randomUUID(),
+    createdAt: new Date().toISOString(),
+    title: body.title,
+    description: body.description || "",
+    priority: body.priority || "low",
+    status: body.status || "open"
+  };
 
-    // Optional fields
-    const description = (body.description || '').trim();
-    const priority = (body.priority || 'medium').trim().toLowerCase();
+  await client.send(new PutItemCommand({
+    TableName: "ticketing-table",
+    Item: marshall(item)
+  }));
 
-    if (!['low', 'medium', 'high'].includes(priority)) {
-        return {
-            statusCode: 400,
-            body: JSON.stringify({ error: 'priority must be low, medium, or high' })
-        };
-    }
-
-    const ticket = {
-        ticketId: randomUUID(),
-        title,
-        description,
-        priority,
-        status: 'open',
-        createdAt: new Date().toISOString()
-    };
-
-    await docClient.send(new PutCommand({
-        TableName: 'ticketing-table',
-        Item: ticket
-    }));
-
-    return {
-        statusCode: 201,
-        body: JSON.stringify(ticket)
-    };
+  return { statusCode: 201, headers: corsHeaders, body: JSON.stringify(item) };
 };
