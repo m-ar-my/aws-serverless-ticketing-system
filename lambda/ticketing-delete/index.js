@@ -1,7 +1,11 @@
 const { DynamoDBClient, QueryCommand, DeleteItemCommand } = require("@aws-sdk/client-dynamodb");
 const { marshall } = require("@aws-sdk/util-dynamodb");
+const { SNSClient, PublishCommand } = require("@aws-sdk/client-sns");
 
 const client = new DynamoDBClient({});
+const snsClient = new SNSClient({ region: "ap-southeast-2" });
+
+const SNS_TOPIC_ARN = process.env.SNS_TOPIC_ARN;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -31,6 +35,13 @@ exports.handler = async (event) => {
   await client.send(new DeleteItemCommand({
     TableName: "ticketing-table",
     Key: marshall({ ticketId, createdAt })
+  }));
+
+  // SNS notification
+  await snsClient.send(new PublishCommand({
+    TopicArn: SNS_TOPIC_ARN,
+    Subject: `[Ticketing] Ticket Deleted: ${ticketId}`,
+    Message: `A ticket has been deleted.\n\nID: ${ticketId}\nDeleted: ${new Date().toISOString()}`
   }));
 
   return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ message: "Ticket deleted" }) };
