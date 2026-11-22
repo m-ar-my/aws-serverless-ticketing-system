@@ -11,6 +11,11 @@ phases:
       - cd lambda/ticketing-get && zip -r ../../ticketing-get.zip index.js && cd ../..
       - cd lambda/ticketing-update && zip -r ../../ticketing-update.zip index.js && cd ../..
       - cd lambda/ticketing-delete && zip -r ../../ticketing-delete.zip index.js && cd ../..
+      - echo "Deploying Lambda functions..."
+      - aws lambda update-function-code --function-name ticketing-create --zip-file fileb://ticketing-create.zip --region ap-southeast-2
+      - aws lambda update-function-code --function-name ticketing-get --zip-file fileb://ticketing-get.zip --region ap-southeast-2
+      - aws lambda update-function-code --function-name ticketing-update --zip-file fileb://ticketing-update.zip --region ap-southeast-2
+      - aws lambda update-function-code --function-name ticketing-delete --zip-file fileb://ticketing-delete.zip --region ap-southeast-2
 
 artifacts:
   files:
