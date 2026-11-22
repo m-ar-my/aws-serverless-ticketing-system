@@ -1,5 +1,5 @@
 version: 0.2
- 
+
 phases:
   install:
     runtime-versions:
@@ -16,6 +16,10 @@ phases:
       - aws lambda update-function-code --function-name ticketing-get --zip-file fileb://ticketing-get.zip --region ap-southeast-2
       - aws lambda update-function-code --function-name ticketing-update --zip-file fileb://ticketing-update.zip --region ap-southeast-2
       - aws lambda update-function-code --function-name ticketing-delete --zip-file fileb://ticketing-delete.zip --region ap-southeast-2
+      - echo "Deploying frontend to S3..."
+      - aws s3 sync frontend/ s3://ticketing-frontend-m-ar-my --delete --region ap-southeast-2
+      - echo "Invalidating CloudFront cache..."
+      - aws cloudfront create-invalidation --distribution-id E14F4HU4QKQRU9 --paths "/*"
 
 artifacts:
   files:
