@@ -6,7 +6,7 @@ phases:
       nodejs: 24
   build:
     commands:
-      - echo "Zipping Lambda functions...."
+      - echo "Zipping Lambda functions..."
       - cd lambda/ticketing-create && zip -r ../../ticketing-create.zip index.js && cd ../..
       - cd lambda/ticketing-get && zip -r ../../ticketing-get.zip index.js && cd ../..
       - cd lambda/ticketing-update && zip -r ../../ticketing-update.zip index.js && cd ../..
