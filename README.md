@@ -1,7 +1,7 @@
 # Ticketing System - AWS Serverless Backend
 
 A serverless IT ticketing backend built on AWS featuring full CRUD operations,
-API key security, input validation, and email notifications.
+API key security, input validation, email notifications, and automated CI/CD deployment.
 
 ## 🏗️ Architecture & Progress
 
@@ -74,7 +74,7 @@ curl -X DELETE "https://xkfvs4luk2.execute-api.ap-southeast-2.amazonaws.com/prod
   -H "x-api-key: <API_KEY>"
 # → 200, subsequent GET returns 404
 
-### Phase 4 - Monitoring ✅
+Phase 4 - Monitoring ✅
 CloudWatch Dashboard: Created ticketing-dashboard with 4 widgets:
 Lambda Errors - all 4 functions
 Lambda Throttles - all 4 functions
@@ -92,7 +92,7 @@ ticketing-delete-throttles - Lambda Throttles > 0 per 5 min
 ticketing-api-4xx-errors - API Gateway 4XXError > 10 per 5 min
 ticketing-api-5xx-errors - API Gateway 5XXError > 10 per 5 min
 
-### Phase 5 - Frontend on S3 + CloudFront ✅
+Phase 5 - Frontend on S3 + CloudFront ✅
 S3 Bucket: ticketing-frontend-m-ar-my - static website hosting enabled, index.html uploaded with full ticketing UI.
 CloudFront Distribution: E14F4HU4QKQRU9
 URL: https://d2akoriob20egl.cloudfront.net 
@@ -113,14 +113,14 @@ Delete button per ticket
 Refresh button
 Success/error message banners
 
-### Phase 6 - SNS Notifications ✅
+Phase 6 - SNS Notifications ✅
 SNS Topic: ticketing-notifications (ap-southeast-2) - email subscription confirmed.
 Lambda Integration: All 3 write functions updated with SNS publish after each operation:
 ticketing-create → triggers "New Ticket Created" email notification
 ticketing-update → triggers "Ticket Status Changed" email notification
 ticketing-delete → triggers "Ticket Deleted" email notification
 Environment Variable: SNS_TOPIC_ARN added to all 3 Lambda functions.
-Frontend Update: Status dropdown and Update button added to ticket list (was missing from Phase 5 - identified and added during this phase):
+Frontend Update: Status dropdown and Update button added to ticket list:
 Status dropdown per ticket (open, in-progress, closed)
 Update button per ticket to change status and trigger SNS notification
 
@@ -132,14 +132,27 @@ Tested & Verified:
 ✅ Update ticket status (open → in-progress) → email notification received
 ✅ Delete ticket → email notification received
 
+Phase 7 - CI/CD with CodePipeline ✅
+CodePipeline: ticketing-backend-pipeline - automatically deploys frontend on every push to main.
+Source: Connected to GitHub via github-ticketing-connection (GitHub App).
+Build: CodeBuild project ticketing-backend-build syncs frontend/ to S3 and invalidates CloudFront cache.
+IAM: Added inline policy CodeBuild-S3-CloudFront-Policy to CodeBuild role with S3 and CloudFront invalidation permissions.
+Trigger Filter: Pipeline excludes README.md changes — commits that only update the README do not trigger a deployment.
+Frontend Update: Added orange deploy banner to index.html:
+🚀 Deployed via AWS CodePipeline — CI/CD is live!
+
+Tested & Verified:
+✅ Push to main → pipeline triggers → S3 synced → CloudFront invalidated → frontend updated
+✅ README-only commit → pipeline does NOT trigger
+
 📋 Roadmap
- Phase 1: Foundation
- Phase 2: Compute & API
- Phase 3: Security & Validation
- Phase 4: CloudWatch Alarms & Dashboard
- Phase 5: Frontend on S3 + CloudFront
- Phase 6: SNS Notifications
- Phase 7: CI/CD with CodePipeline
+✅ Phase 1: Foundation
+✅ Phase 2: Compute & API
+✅ Phase 3: Security & Validation
+✅ Phase 4: CloudWatch Alarms & Dashboard
+✅ Phase 5: Frontend on S3 + CloudFront
+✅ Phase 6: SNS Notifications
+✅ Phase 7: CI/CD with CodePipeline
 
 🔑 Key Resources
 Resource	Value
@@ -148,4 +161,7 @@ CloudFront URL	https://d2akoriob20egl.cloudfront.net
 DynamoDB Table	ticketing-table
 SNS Topic	ticketing-notifications (ap-southeast-2)
 Usage Plan	ticketing-usage-plan (ID: 3qmqgd)
+CodePipeline	ticketing-backend-pipeline
+CodeBuild Project	ticketing-backend-build
+GitHub Connection	github-ticketing-connection
 Region	ap-southeast-2
